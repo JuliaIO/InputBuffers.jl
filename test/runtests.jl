@@ -4,6 +4,7 @@ using Aqua
 using Random
 using OffsetArrays: OffsetArray
 using FillArrays: Zeros
+using CRC32: crc32
 
 @testset "InputBuffers.jl" begin
     @testset "Code quality (Aqua.jl)" begin
@@ -292,6 +293,68 @@ using FillArrays: Zeros
         @test_throws ArgumentError read(b)
         @test_throws ArgumentError read(b, String)
         @test_throws ArgumentError read(b, UInt8)
+        @test_throws ArgumentError readbytes!(b, UInt8[])
         @test isnothing(close(b)) # second close should be noop
+    end
+    @testset "crc32" begin
+        for trial in 1:100
+            data = rand(UInt8, rand(0:1000000))
+            h = crc32(data)
+            @test h == crc32(InputBuffer(data))
+        end
+    end
+    @testset "readbytes!" begin
+        # grow output
+        b = InputBuffer(b"foo")
+        out = UInt8[]
+        @test readbytes!(b, out, 10) == 3
+        @test position(b) == 3
+        @test out == b"foo"
+
+        # don't shrink output
+        b = InputBuffer(b"foo")
+        out = zeros(UInt8, 10)
+        @test readbytes!(b, out) == 3
+        @test position(b) == 3
+        @test out == [b"foo"; zeros(UInt8, 7);]
+
+        b = InputBuffer(b"foo")
+        out = zeros(UInt8, 10)
+        @test readbytes!(b, out, 3) == 3
+        @test position(b) == 3
+        @test out == [b"foo"; zeros(UInt8, 7);]
+
+        # don't read all
+        b = InputBuffer(b"foo")
+        out = zeros(UInt8, 10)
+        @test readbytes!(b, out, 2) == 2
+        @test position(b) == 2
+        @test out == [b"fo"; zeros(UInt8, 8);]
+
+        # read zero
+        b = InputBuffer(b"foo")
+        out = zeros(UInt8, 10)
+        @test readbytes!(b, out, 0) == 0
+        @test position(b) == 0
+        @test out == [zeros(UInt8, 10);]
+
+        b = InputBuffer(b"foo")
+        seekend(b)
+        out = zeros(UInt8, 10)
+        @test readbytes!(b, out) == 0
+        @test position(b) == 3
+        @test out == [zeros(UInt8, 10);]
+
+        b = InputBuffer(b"")
+        out = zeros(UInt8, 10)
+        @test readbytes!(b, out) == 0
+        @test position(b) == 0
+        @test out == [zeros(UInt8, 10);]
+
+        b = InputBuffer(b"foo")
+        out = zeros(UInt8, 0)
+        @test readbytes!(b, out, 0) == 0
+        @test position(b) == 0
+        @test out == zeros(UInt8, 0)
     end
 end

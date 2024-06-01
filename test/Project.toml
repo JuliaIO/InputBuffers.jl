@@ -1,5 +1,6 @@
 [deps]
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
+CRC32 = "b4567568-9dcc-467e-9b62-c342d3a501d3"
 FillArrays = "1a297f60-69ca-5386-bcde-b61e274b549b"
 InputBuffers = "0c81fc1b-5583-44fc-8770-48be1e1cca08"
 OffsetArrays = "6fe1bfb0-de20-5000-8ca7-80f57d26f881"

@@ -94,7 +94,7 @@ function Base.read(b::InputBuffer, nb::Integer = typemax(Int))::Vector{UInt8}
     b.pos += nr
     out
 end
-function Base.readbytes!(b::InputBuffer, out::AbstractArray{UInt8}, nb=length(out))
+function Base.readbytes!(b::InputBuffer, out::AbstractArray{UInt8}, nb=length(out))::Int64
     signbit(nb) && throw(ArgumentError("negative nbytes"))
     nr::Int64 = min(nb, bytesavailable(b)) # errors if closed
     if nr > length(out)
@@ -113,7 +113,7 @@ const ByteVector = Union{
     Base.FastContiguousSubArray{UInt8,1,Vector{UInt8}}
 }
 
-function Base.unsafe_read(b::InputBuffer{<:ByteVector}, p::Ptr{UInt8}, n::UInt)
+function Base.unsafe_read(b::InputBuffer{<:ByteVector}, p::Ptr{UInt8}, n::UInt)::Nothing
     nb::Int64 = min(n, bytesavailable(b)) # errors if closed
     data = b.data
     GC.@preserve data unsafe_copyto!(p, pointer(data, firstindex(data) + b.pos), nb)
