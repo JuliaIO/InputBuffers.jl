@@ -267,4 +267,31 @@ using FillArrays: Zeros
         end
         @test_throws Exception InputBuffer(Zeros{UInt8}(typemax(UInt64)))
     end
+    @testset "closing" begin
+        b = InputBuffer(b"foo")
+        mark(b)
+        @test !iswritable(b)
+        @test isopen(b)
+        @test isreadable(b)
+        @test bytesavailable(b) == 3
+        read(b)
+        @test !iswritable(b)
+        @test isopen(b)
+        @test isreadable(b)
+        @test eof(b)
+        @test bytesavailable(b) == 0
+        @test isnothing(close(b))
+        @test !isopen(b)
+        @test !isreadable(b)
+        @test !iswritable(b)
+        @test_throws ArgumentError eof(b)
+        @test !ismarked(b)
+        @test_throws ArgumentError mark(b)
+        @test_throws ArgumentError position(b)
+        @test_throws ArgumentError bytesavailable(b)
+        @test_throws ArgumentError read(b)
+        @test_throws ArgumentError read(b, String)
+        @test_throws ArgumentError read(b, UInt8)
+        @test isnothing(close(b)) # second close should be noop
+    end
 end
