@@ -88,11 +88,21 @@ end
 
 function Base.read(b::InputBuffer, nb::Integer = typemax(Int))::Vector{UInt8}
     signbit(nb) && throw(ArgumentError("negative nbytes"))
-    out_nb::Int64 = min(nb, bytesavailable(b)) # errors if closed
-    out = Vector{UInt8}(undef, out_nb)
-    copyto!(out, 1, b.data, b.pos+firstindex(b.data), out_nb)
-    b.pos += out_nb
+    nr::Int64 = min(nb, bytesavailable(b)) # errors if closed
+    out = Vector{UInt8}(undef, nr)
+    copyto!(out, 1, b.data, b.pos+firstindex(b.data), nr)
+    b.pos += nr
     out
+end
+function Base.readbytes!(b::InputBuffer, out::AbstractArray{UInt8}, nb=length(out))
+    signbit(nb) && throw(ArgumentError("negative nbytes"))
+    nr::Int64 = min(nb, bytesavailable(b)) # errors if closed
+    if nr > length(out)
+        resize!(out, nr)
+    end
+    copyto!(out, firstindex(out), b.data, b.pos+firstindex(b.data), nr)
+    b.pos += nr
+    return nr
 end
 Base.readavailable(b::InputBuffer) = read(b)
 
@@ -113,7 +123,6 @@ function Base.unsafe_read(b::InputBuffer{<:ByteVector}, p::Ptr{UInt8}, n::UInt)
 end
 
 # TODO Benchmark to see if the following are worth implementing
-# Base.readbytes!
 # Base.copyline
 # Base.copyuntil
 
