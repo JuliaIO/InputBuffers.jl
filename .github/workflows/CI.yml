@@ -24,7 +24,11 @@ jobs:
       matrix:
         version:
           - '1.6'
+          - '1.7'
+          - '1.8'
+          - '1.9'
           - '1.10'
+          - '~1.11.0-0'
           - 'nightly'
         os:
           - ubuntu-latest
@@ -37,6 +41,7 @@ jobs:
         with:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
+          show-versioninfo: true
       - uses: julia-actions/cache@v2
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
