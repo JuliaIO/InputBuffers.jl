@@ -267,6 +267,15 @@ using CRC32: crc32
             @test position(b) == len
         end
         @test_throws Exception InputBuffer(Zeros{UInt8}(typemax(UInt64)))
+
+        # FastContiguousSubArray with non Int indexes
+        for T in (BigInt, UInt64, Int64)
+            b = InputBuffer(view(zeros(UInt8,1000), T(2):T(90)))
+            @test read(b, UInt8) === UInt8(0)
+            data = ones(UInt8, 5)
+            GC.@preserve data unsafe_read(b, pointer(data), 5) === nothing
+            @test data == zeros(UInt8, 5)
+        end
     end
     @testset "closing" begin
         b = InputBuffer(b"foo")
