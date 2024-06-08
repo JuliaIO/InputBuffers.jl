@@ -116,7 +116,7 @@ const ByteVector = Union{
 function Base.unsafe_read(b::InputBuffer{<:ByteVector}, p::Ptr{UInt8}, n::UInt)::Nothing
     nb::Int64 = min(n, bytesavailable(b)) # errors if closed
     data = b.data
-    GC.@preserve data unsafe_copyto!(p, pointer(data, firstindex(data) + b.pos), nb)
+    GC.@preserve data unsafe_copyto!(p, pointer(data, Int(firstindex(data) + b.pos)), nb)
     b.pos += nb
     nb < n && throw(EOFError())
     nothing
