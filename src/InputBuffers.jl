@@ -20,6 +20,7 @@ end
 
 Base.close(::InputBuffer)::Nothing = nothing
 Base.isopen(::InputBuffer)::Bool = true
+Base.isreadable(::InputBuffer)::Bool = true
 Base.iswritable(::InputBuffer)::Bool = false
 
 function Base.eof(b::InputBuffer)::Bool
