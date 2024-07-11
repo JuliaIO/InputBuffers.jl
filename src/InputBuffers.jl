@@ -7,7 +7,6 @@ mutable struct InputBuffer{T<:AbstractVector{UInt8}} <: IO
     pos::Int64
     size::Int64
     mark::Int64
-    opened::Bool
 end
 
 """
@@ -16,37 +15,22 @@ end
 Create a readable and seekable I/O stream wrapper around a vector of bytes.
 """
 function InputBuffer(data::AbstractVector{UInt8})
-    InputBuffer{typeof(data)}(data, 0, length(data), -1, true)
+    InputBuffer{typeof(data)}(data, 0, length(data), -1)
 end
 
-function Base.close(b::InputBuffer)::Nothing
-    b.pos = 0
-    b.mark = -1
-    b.opened=false
-    nothing
-end
-
-Base.isopen(b::InputBuffer)::Bool = b.opened
-Base.isreadable(b::InputBuffer)::Bool = b.opened
-Base.iswritable(b::InputBuffer)::Bool = false
-
-function _throw_closed_error()
-    throw(ArgumentError("read failed, InputBuffer is closed"))
-end
-
+Base.close(::InputBuffer)::Nothing = nothing
+Base.isopen(::InputBuffer)::Bool = true
+Base.iswritable(::InputBuffer)::Bool = false
 
 function Base.eof(b::InputBuffer)::Bool
-    isopen(b) || _throw_closed_error()
     b.pos === b.size
 end
 
 function Base.position(b::InputBuffer)::Int64
-    isopen(b) || _throw_closed_error()
     b.pos
 end
 
 function Base.bytesavailable(b::InputBuffer)::Int64
-    isopen(b) || _throw_closed_error()
     b.size-b.pos
 end
 
@@ -54,13 +38,11 @@ end
 # ---------------
 
 function Base.seek(b::InputBuffer, n::Integer)::InputBuffer
-    isopen(b) || _throw_closed_error()
     b.pos = clamp(n, 0, b.size)
     b
 end
 
 function Base.seekend(b::InputBuffer)::InputBuffer
-    isopen(b) || _throw_closed_error()
     b.pos = b.size
     b
 end
@@ -76,12 +58,11 @@ end
 
 # needed for `peek(b, Char)` to work
 function Base.peek(b::InputBuffer, ::Type{UInt8})::UInt8
-    eof(b) && throw(EOFError()) # also prevents overflow and errors if closed
+    eof(b) && throw(EOFError())
     b.data[firstindex(b.data) + b.pos]
 end
 
 function Base.skip(b::InputBuffer, n::Integer)::InputBuffer
-    isopen(b) || _throw_closed_error()
     b.pos += clamp(n, -b.pos, b.size - b.pos)
     b
 end
@@ -114,7 +95,7 @@ const ByteVector = Union{
 }
 
 function Base.unsafe_read(b::InputBuffer{<:ByteVector}, p::Ptr{UInt8}, n::UInt)::Nothing
-    nb::Int64 = min(n, bytesavailable(b)) # errors if closed
+    nb::Int64 = min(n, bytesavailable(b))
     data = b.data
     GC.@preserve data unsafe_copyto!(p, pointer(data, Int(firstindex(data) + b.pos)), nb)
     b.pos += nb
