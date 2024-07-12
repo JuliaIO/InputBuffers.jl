@@ -1,7 +1,7 @@
 name = "InputBuffers"
 uuid = "0c81fc1b-5583-44fc-8770-48be1e1cca08"
 authors = ["nhz2 <nhz2@cornell.edu> and contributors"]
-version = "0.1.1"
+version = "0.2.0"
 
 [compat]
 julia = "1.6"

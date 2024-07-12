@@ -190,8 +190,8 @@ using CRC32: crc32
         @test !ismarked(stream)
         @test !unmark(stream)
         @test mark(stream) == 3
-        close(stream)
-        @test !ismarked(stream)
+        close(stream) # This is a no-op
+        @test ismarked(stream)
     
         stream = InputBuffer(b"foobarbaz")
         @test stream == seek(stream, 2)
@@ -214,11 +214,6 @@ using CRC32: crc32
         skip(stream, 7)
         @test eof(stream)
         close(stream)
-
-        stream = InputBuffer(b"")
-        @test eof(stream)
-        close(stream)
-        @test_throws ArgumentError eof(stream)  # close
 
         @testset "readuntil" begin
             stream = InputBuffer(b"")
@@ -277,33 +272,12 @@ using CRC32: crc32
             @test data == zeros(UInt8, 5)
         end
     end
-    @testset "closing" begin
+    @testset "closing is no-op" begin
         b = InputBuffer(b"foo")
-        mark(b)
-        @test !iswritable(b)
-        @test isopen(b)
-        @test isreadable(b)
-        @test bytesavailable(b) == 3
-        read(b)
-        @test !iswritable(b)
-        @test isopen(b)
-        @test isreadable(b)
-        @test eof(b)
-        @test bytesavailable(b) == 0
         @test isnothing(close(b))
-        @test !isopen(b)
-        @test !isreadable(b)
+        @test isopen(b)
+        @test isreadable(b)
         @test !iswritable(b)
-        @test_throws ArgumentError eof(b)
-        @test !ismarked(b)
-        @test_throws ArgumentError mark(b)
-        @test_throws ArgumentError position(b)
-        @test_throws ArgumentError bytesavailable(b)
-        @test_throws ArgumentError read(b)
-        @test_throws ArgumentError read(b, String)
-        @test_throws ArgumentError read(b, UInt8)
-        @test_throws ArgumentError readbytes!(b, UInt8[])
-        @test isnothing(close(b)) # second close should be noop
     end
     @testset "crc32" begin
         for trial in 1:100
