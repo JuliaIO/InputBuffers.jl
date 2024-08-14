@@ -1,7 +1,7 @@
 # InputBuffers
 
-[![CI](https://github.com/nhz2/InputBuffers.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/nhz2/InputBuffers.jl/actions/workflows/CI.yml)
-[![codecov](https://codecov.io/gh/nhz2/InputBuffers.jl/graph/badge.svg?token=60AX7T7NTB)](https://codecov.io/gh/nhz2/InputBuffers.jl)
+[![CI](https://github.com/JuliaIO/InputBuffers.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/JuliaIO/InputBuffers.jl/actions/workflows/CI.yml)
+[![codecov](https://codecov.io/gh/JuliaIO/InputBuffers.jl/graph/badge.svg?token=60AX7T7NTB)](https://codecov.io/gh/JuliaIO/InputBuffers.jl)
 [![Aqua](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
 
 A Julia package to wrap an `AbstractVector{UInt8}` in a readable seekable `IO` type.
