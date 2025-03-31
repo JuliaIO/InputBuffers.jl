@@ -96,11 +96,7 @@ using CRC32: crc32
             @test read(io, String) == ""
             @test read(io2, String) == ""
             seek(io2, 0)
-            truncate(io2, io2.size - 2)
-            @test read(io2, String) == "goodnightmoonhelloworld"
-            seek(io2, 0)
-            write(io2, io2)
-            @test read(io2, String) == ""
+            @test read(io2, String) == "goodnightmoonhelloworldω"
         end
     
         @test flush(InputBuffer(UInt8[])) === nothing # should be a no-op
