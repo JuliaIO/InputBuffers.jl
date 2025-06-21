@@ -18,6 +18,8 @@ function InputBuffer(data::AbstractVector{UInt8})
     InputBuffer{typeof(data)}(data, 0, length(data), -1)
 end
 
+Base.parent(b::InputBuffer) = b.data
+
 Base.close(::InputBuffer)::Nothing = nothing
 Base.isopen(::InputBuffer)::Bool = true
 Base.isreadable(::InputBuffer)::Bool = true

@@ -15,4 +15,5 @@ data = 0x00:0xFF
 io = InputBuffer(data)
 @assert io isa IO
 @assert read(io) == data
+@assert parent(io) === data
 ```
