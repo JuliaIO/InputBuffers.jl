@@ -93,14 +93,27 @@ Base.readavailable(b::InputBuffer) = read(b)
 const ByteVector = Union{
     Vector{UInt8},
     Base.CodeUnits{UInt8, String},
-    Base.FastContiguousSubArray{UInt8,1,Base.CodeUnits{UInt8,String}}, 
-    Base.FastContiguousSubArray{UInt8,1,Vector{UInt8}}
+    typeof(view(codeunits("abc"), :)),
+    typeof(view(codeunits("abc"), 1:2)),
+    typeof(view(zeros(UInt8, 3), :)),
+    typeof(view(zeros(UInt8, 3), 1:2))
 }
 
-function Base.unsafe_read(b::InputBuffer{<:ByteVector}, p::Ptr{UInt8}, n::UInt)::Nothing
+# Using @noinline to hopefully prevent strange TBAA issues based on where p comes from
+@noinline function Base.unsafe_read(b::InputBuffer, p::Ptr{UInt8}, n::UInt)::Nothing
     nb::Int64 = min(n, bytesavailable(b))
-    data = b.data
-    GC.@preserve data unsafe_copyto!(p, pointer(data, Int(firstindex(data) + b.pos)), nb)
+    temp = Vector{UInt8}(undef, nb)
+    copyto!(temp, 1, b.data, b.pos+firstindex(b.data), nb)
+    cconv_temp = Base.cconvert(Ptr{UInt8}, temp)
+    GC.@preserve cconv_temp unsafe_copyto!(p, Base.unsafe_convert(Ptr{UInt8}, cconv_temp), nb)
+    b.pos += nb
+    nb < n && throw(EOFError())
+    nothing
+end
+@noinline function Base.unsafe_read(b::InputBuffer{<:ByteVector}, p::Ptr{UInt8}, n::UInt)::Nothing
+    nb::Int64 = min(n, bytesavailable(b))
+    cconv_data = Base.cconvert(Ptr{UInt8}, b.data)
+    GC.@preserve cconv_data unsafe_copyto!(p, Base.unsafe_convert(Ptr{UInt8}, cconv_data) + b.pos, nb)
     b.pos += nb
     nb < n && throw(EOFError())
     nothing
