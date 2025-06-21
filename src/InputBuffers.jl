@@ -72,19 +72,19 @@ end
 
 function Base.read(b::InputBuffer, nb::Integer = typemax(Int))::Vector{UInt8}
     signbit(nb) && throw(ArgumentError("negative nbytes"))
-    nr::Int64 = min(nb, bytesavailable(b)) # errors if closed
+    nr::Int64 = min(nb, bytesavailable(b))
     out = Vector{UInt8}(undef, nr)
-    copyto!(out, 1, b.data, b.pos+firstindex(b.data), nr)
+    copyto!(out, Int64(1), b.data, Int64(b.pos+firstindex(b.data)), nr)
     b.pos += nr
     out
 end
 function Base.readbytes!(b::InputBuffer, out::AbstractArray{UInt8}, nb=length(out))::Int64
     signbit(nb) && throw(ArgumentError("negative nbytes"))
-    nr::Int64 = min(nb, bytesavailable(b)) # errors if closed
+    nr::Int64 = min(nb, bytesavailable(b))
     if nr > length(out)
         resize!(out, nr)
     end
-    copyto!(out, firstindex(out), b.data, b.pos+firstindex(b.data), nr)
+    copyto!(out, Int64(firstindex(out)), b.data, Int64(b.pos+firstindex(b.data)), nr)
     b.pos += nr
     return nr
 end
@@ -103,7 +103,7 @@ const ByteVector = Union{
 @noinline function Base.unsafe_read(b::InputBuffer, p::Ptr{UInt8}, n::UInt)::Nothing
     nb::Int64 = min(n, bytesavailable(b))
     temp = Vector{UInt8}(undef, nb)
-    copyto!(temp, 1, b.data, b.pos+firstindex(b.data), nb)
+    copyto!(temp, Int64(1), b.data, Int64(b.pos+firstindex(b.data)), nb)
     cconv_temp = Base.cconvert(Ptr{UInt8}, temp)
     GC.@preserve cconv_temp unsafe_copyto!(p, Base.unsafe_convert(Ptr{UInt8}, cconv_temp), nb)
     b.pos += nb
