@@ -336,4 +336,9 @@ using CRC32: crc32
         @test position(b) == 0
         @test out == zeros(UInt8, 0)
     end
+    @testset "parent" begin
+        data = b"foo"
+        b = InputBuffer(data)
+        @test data === parent(b)
+    end
 end
