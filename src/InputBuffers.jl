@@ -90,11 +90,11 @@ function Base.readbytes!(b::InputBuffer, out::AbstractArray{UInt8}, nb=length(ou
 end
 Base.readavailable(b::InputBuffer) = read(b)
 
-@static if isdefined(Base, :has_strided_get)
+@static if isdefined(Base, :try_strides)
     # Using @noinline to hopefully prevent strange TBAA issues based on where p comes from
     @noinline function Base.unsafe_read(b::InputBuffer, p::Ptr{UInt8}, n::UInt)::Nothing
         nb::Int64 = min(n, bytesavailable(b))
-        if has_strided_get(b.data) && isone(Base.elsize(b.data)) && isone(only(strides(b.data)))
+        if is_ptr_loadable(b.data) && try_strides(b.data) === (1,) && isone(Base.elsize(b.data))
             cconv_data = Base.cconvert(Ptr{UInt8}, b.data)
             GC.@preserve cconv_data unsafe_copyto!(p, Base.unsafe_convert(Ptr{UInt8}, cconv_data) + b.pos, nb)
         else
