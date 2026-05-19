@@ -90,33 +90,52 @@ function Base.readbytes!(b::InputBuffer, out::AbstractArray{UInt8}, nb=length(ou
 end
 Base.readavailable(b::InputBuffer) = read(b)
 
-const ByteVector = Union{
-    Vector{UInt8},
-    Base.CodeUnits{UInt8, String},
-    typeof(view(codeunits("abc"), :)),
-    typeof(view(codeunits("abc"), 1:2)),
-    typeof(view(zeros(UInt8, 3), :)),
-    typeof(view(zeros(UInt8, 3), 1:2))
-}
+@static if isdefined(Base, :try_strides)
+    # Using @noinline to hopefully prevent strange TBAA issues based on where p comes from
+    @noinline function Base.unsafe_read(b::InputBuffer, p::Ptr{UInt8}, n::UInt)::Nothing
+        nb::Int64 = min(n, bytesavailable(b))
+        if is_ptr_loadable(b.data) && try_strides(b.data) === (1,) && isone(Base.elsize(b.data))
+            cconv_data = Base.cconvert(Ptr{UInt8}, b.data)
+            GC.@preserve cconv_data unsafe_copyto!(p, Base.unsafe_convert(Ptr{UInt8}, cconv_data) + b.pos, nb)
+        else
+            temp = Vector{UInt8}(undef, nb)
+            copyto!(temp, Int64(1), b.data, Int64(b.pos+firstindex(b.data)), nb)
+            cconv_temp = Base.cconvert(Ptr{UInt8}, temp)
+            GC.@preserve cconv_temp unsafe_copyto!(p, Base.unsafe_convert(Ptr{UInt8}, cconv_temp), nb)
+        end
+        b.pos += nb
+        nb < n && throw(EOFError())
+        nothing
+    end
+else
+    const ByteVector = Union{
+        Vector{UInt8},
+        Base.CodeUnits{UInt8, String},
+        typeof(view(codeunits("abc"), :)),
+        typeof(view(codeunits("abc"), 1:2)),
+        typeof(view(zeros(UInt8, 3), :)),
+        typeof(view(zeros(UInt8, 3), 1:2))
+    }
 
-# Using @noinline to hopefully prevent strange TBAA issues based on where p comes from
-@noinline function Base.unsafe_read(b::InputBuffer, p::Ptr{UInt8}, n::UInt)::Nothing
-    nb::Int64 = min(n, bytesavailable(b))
-    temp = Vector{UInt8}(undef, nb)
-    copyto!(temp, Int64(1), b.data, Int64(b.pos+firstindex(b.data)), nb)
-    cconv_temp = Base.cconvert(Ptr{UInt8}, temp)
-    GC.@preserve cconv_temp unsafe_copyto!(p, Base.unsafe_convert(Ptr{UInt8}, cconv_temp), nb)
-    b.pos += nb
-    nb < n && throw(EOFError())
-    nothing
-end
-@noinline function Base.unsafe_read(b::InputBuffer{<:ByteVector}, p::Ptr{UInt8}, n::UInt)::Nothing
-    nb::Int64 = min(n, bytesavailable(b))
-    cconv_data = Base.cconvert(Ptr{UInt8}, b.data)
-    GC.@preserve cconv_data unsafe_copyto!(p, Base.unsafe_convert(Ptr{UInt8}, cconv_data) + b.pos, nb)
-    b.pos += nb
-    nb < n && throw(EOFError())
-    nothing
+    # Using @noinline to hopefully prevent strange TBAA issues based on where p comes from
+    @noinline function Base.unsafe_read(b::InputBuffer, p::Ptr{UInt8}, n::UInt)::Nothing
+        nb::Int64 = min(n, bytesavailable(b))
+        temp = Vector{UInt8}(undef, nb)
+        copyto!(temp, Int64(1), b.data, Int64(b.pos+firstindex(b.data)), nb)
+        cconv_temp = Base.cconvert(Ptr{UInt8}, temp)
+        GC.@preserve cconv_temp unsafe_copyto!(p, Base.unsafe_convert(Ptr{UInt8}, cconv_temp), nb)
+        b.pos += nb
+        nb < n && throw(EOFError())
+        nothing
+    end
+    @noinline function Base.unsafe_read(b::InputBuffer{<:ByteVector}, p::Ptr{UInt8}, n::UInt)::Nothing
+        nb::Int64 = min(n, bytesavailable(b))
+        cconv_data = Base.cconvert(Ptr{UInt8}, b.data)
+        GC.@preserve cconv_data unsafe_copyto!(p, Base.unsafe_convert(Ptr{UInt8}, cconv_data) + b.pos, nb)
+        b.pos += nb
+        nb < n && throw(EOFError())
+        nothing
+    end
 end
 
 # TODO Benchmark to see if the following are worth implementing
